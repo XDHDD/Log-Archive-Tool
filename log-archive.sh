@@ -3,32 +3,33 @@
 target_path=/var/log/ # default backup target
 backup_path=/var/backup/ # default path of backup place
 tar_ext=".tar.gz" # default extension
-compress_type="z" # default comprassion
+compress_type="z" # default compression
 delimiter=""  # default delimiter
 verbose="" # default no output of archive content
-custom_target=0  # var if -p given
+custom_target=0  # if -p given
 
 # main func
 main(){
 
+  # some check and error handling
   if [[ ! -d $target_path ]]; then
     echo "No directory found for backup: $target_path"; exit 1
   fi
 
   if [[ "$compress_type" == "z" ]]; then
     tar_ext=".tar.gz"
-    echo "Chosen type: .tar.gz"
+    echo "Chosen type: tar.gz"
 
   elif [[ "$compress_type" == "j" ]]; then
     tar_ext=".tar.bz2"
-    echo "Chosen type: .tar.bz2"
+    echo "Chosen type: tar.bz2"
 
   elif [[ "$compress_type" == "J" ]]; then
     tar_ext=".tar.xz"
-    echo "Chosen type: .tar.xz"
+    echo "Chosen type: tar.xz"
 
   else
-    echo "Wrong argument: '${compress_type}'. See log-archive --help"; exit 1
+    echo "Wrong argument: '${compress_type}'. See log-archive -h"; exit 1
   fi
 
   if [[ ! -d $backup_path ]]; then
@@ -46,10 +47,10 @@ main(){
   full_name="log_archive_$timestamp$tar_ext" # full name of backup file
 
 
-  tar -c"$verbose""$compress_type"f "$full_name" -C "$target_path" . # creating tar archive with comprassion
+  tar -c"$verbose""$compress_type"f "$full_name" -C "$target_path" . # creating tar archive with compression
   file_size=$(stat -c "%s" "$full_name" | numfmt --to=iec) # calculating backup size
   mv log_archive_"$timestamp""$tar_ext" "$backup_path" # copy to backup directory
-  echo "Created backup file $full_name, $file_size" | tee logger # show output of executed script
+  echo "Created backup file "$full_name", "$file_size" to "$backup_path"" |tee >(logger -t "log-archive") # show output of executed script and log it
 }
 
 
@@ -63,7 +64,7 @@ Usage: log-archive <options> <value> <target>
 
 Options:
   -h,             Show this help
-  -c,             Comprassion for tar. Available values:
+  -c,             Compression for tar. Available values:
                   - J value for xz;
                   - j value for bz2;
                   - z value for gzip
@@ -79,9 +80,9 @@ Examples:
 
   1.Default usage: log-archive
 
-  2.Run log-archive with target: log-archive /var/log/apt or log-archive -c j /var/log/apt or log-archive -c j -p /var/log/apt 
+  2.Run log-archive with target: log-archive /var/log/apt or log-archive -c j /var/log/apt or log-archive -c j -p /var/log/apt
 
-  3.Override comprassion type with custom delimiter: log-archive -c J -d '#'
+  3.Override compression type with custom delimiter: log-archive -c J -d '#'
 
   4.Make a backup of /var/log/messages: log-archive -c z /var/log/messages
 
@@ -113,9 +114,9 @@ done
 # Shift processed options
 shift $((OPTIND - 1))
 
-# If there is no -p key, take first positional arg
+# If there no -p, take pos arg
 if [[ $custom_target -eq 0 && -n "$1" ]]; then
     target_path="$1"
 fi
-echo $1
+
 main
